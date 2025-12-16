@@ -1,0 +1,2 @@
+# ruutfunktsioon
+Ruutfunktsiooni interaktiivne graafik
