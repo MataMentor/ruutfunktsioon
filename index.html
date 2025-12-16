@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="et">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ruutfunktsioon: y = ax² + bx + c</title>
+  <script src="https://cdn.plot.ly/plotly-2.30.0.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0b0b0f;
+      --panel:#12121a;
+      --text:#e9e9ef;
+      --muted:#b8b8c7;
+      --border:#2a2a3a;
+      --btn:#1b1b28;
+      --btnHover:#232336;
+      --accent:#6aa6ff;
+    }
+
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    .wrap{
+      max-width: 980px;
+      margin: 18px auto;
+      padding: 16px;
+    }
+
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding: 14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+
+    h1{
+      font-size: 18px;
+      margin: 0 0 10px 0;
+      font-weight: 650;
+      letter-spacing: 0.2px;
+    }
+
+    #plot{
+      width:100%;
+      height: min(56vh, 520px);
+      border-radius: 14px;
+      overflow:hidden;
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns: 18px 1fr 64px;
+      gap: 12px;
+      align-items:center;
+    }
+
+    label{
+      color:var(--muted);
+      font-weight: 650;
+    }
+
+    input[type="range"]{
+      width:100%;
+      accent-color: var(--accent);
+    }
+
+    .val{
+      text-align:right;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      opacity: 0.95;
+    }
+
+    .btnRow{
+      display:flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    button{
+      background: var(--btn);
+      border:1px solid var(--border);
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 10px;
+      cursor:pointer;
+      font-size: 13px;
+    }
+
+    button:hover{
+      background: var(--btnHover);
+    }
+
+    .hint{
+      color:var(--muted);
+      font-size: 13px;
+      margin-top: 10px;
+      line-height: 1.35;
+    }
+
+    .pill{
+      display:inline-block;
+      padding: 3px 8px;
+      border:1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      font-size: 12px;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Ruutfunktsioon: y = ax² + bx + c <span class="pill">tume režiim</span></h1>
+
+      <div id="plot"></div>
+
+      <div class="grid">
+
+        <div>
+          <div class="row">
+            <label for="a">a</label>
+            <input id="a" type="range" min="-5" max="5" step="0.1" value="1">
+            <div class="val" id="aVal">1.0</div>
+          </div>
+          <div class="btnRow">
+            <button onclick="setSign('a', -1)">Neg</button>
+            <button onclick="setZeroA()">0</button>
+            <button onclick="setSign('a', 1)">Pos</button>
+          </div>
+          <div class="hint">a ei tohiks olla 0 (muidu pole enam ruutfunktsioon). “0” paneb a väga väikseks.</div>
+        </div>
+
+        <div>
+          <div class="row">
+            <label for="b">b</label>
+            <input id="b" type="range" min="-10" max="10" step="0.1" value="0">
+            <div class="val" id="bVal">0.0</div>
+          </div>
+          <div class="btnRow">
+            <button onclick="setSign('b', -1)">Neg</button>
+            <button onclick="setExact('b', 0)">0</button>
+            <button onclick="setSign('b', 1)">Pos</button>
+          </div>
+        </div>
+
+        <div>
+          <div class="row">
+            <label for="c">c</label>
+            <input id="c" type="range" min="-20" max="20" step="0.1" value="0">
+            <div class="val" id="cVal">0.0</div>
+          </div>
+          <div class="btnRow">
+            <button onclick="setSign('c', -1)">Neg</button>
+            <button onclick="setExact('c', 0)">0</button>
+            <button onclick="setSign('c', 1)">Pos</button>
+          </div>
+        </div>
+
+        <div class="btnRow">
+          <button onclick="setAll(-1)">Set all: Neg</button>
+          <button onclick="setAll(0)">Set all: 0</button>
+          <button onclick="setAll(1)">Set all: Pos</button>
+        </div>
+
+        <div class="hint">
+          Nihuta liugureid: a muudab kuju ja suunda, b nihutab külgsuunas, c nihutab üles-alla.
+          Kui tahad, saan lisada ka nullkohad, tipupunkti ja diskriminandi.
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // data grid
+    const x = [];
+    for (let i = -10; i <= 10; i += 0.05) x.push(i);
+
+    function yVals(a, b, c) {
+      return x.map(xx => a*xx*xx + b*xx + c);
+    }
+
+    const plotDiv = document.getElementById("plot");
+
+    const layout = {
+      paper_bgcolor: "rgba(0,0,0,0)",
+      plot_bgcolor: "rgba(0,0,0,0)",
+      font: { color: "#e9e9ef" },
+      title: { text: "y = ax² + bx + c" },
+      xaxis: { title: "x", range: [-10, 10], zeroline: true, gridcolor: "rgba(255,255,255,0.08)", zerolinecolor: "rgba(255,255,255,0.25)" },
+      yaxis: { title: "y", range: [-20, 20], zeroline: true, gridcolor: "rgba(255,255,255,0.08)", zerolinecolor: "rgba(255,255,255,0.25)" },
+      margin: { l: 50, r: 20, t: 50, b: 50 }
+    };
+
+    function readParams() {
+      const a = parseFloat(document.getElementById("a").value);
+      const b = parseFloat(document.getElementById("b").value);
+      const c = parseFloat(document.getElementById("c").value);
+      document.getElementById("aVal").textContent = a.toFixed(1);
+      document.getElementById("bVal").textContent = b.toFixed(1);
+      document.getElementById("cVal").textContent = c.toFixed(1);
+      return { a, b, c };
+    }
+
+    function update() {
+      const { a, b, c } = readParams();
+      Plotly.react(plotDiv, [{
+        x: x,
+        y: yVals(a, b, c),
+        mode: "lines",
+        name: "y = ax² + bx + c",
+        line: { width: 3 }
+      }], layout, { displayModeBar: false, responsive: true });
+    }
+
+    // helpers for quick sign buttons
+    function setExact(id, val) {
+      const el = document.getElementById(id);
+      el.value = val;
+      update();
+    }
+
+    function setSign(id, sign) {
+      const el = document.getElementById(id);
+      const current = parseFloat(el.value);
+      if (current === 0) {
+        // pick a sensible default magnitude
+        el.value = (id === "a") ? (sign * 1) : (sign * 2);
+      } else {
+        el.value = Math.abs(current) * sign;
+      }
+      update();
+    }
+
+    // a=0 would destroy quadratic; set near-zero instead
+    function setZeroA() {
+      const el = document.getElementById("a");
+      el.value = 0.1; // "almost zero" so students see it becomes almost flat
+      update();
+    }
+
+    function setAll(mode) {
+      if (mode === 0) {
+        setZeroA();
+        setExact("b", 0);
+        setExact("c", 0);
+        return;
+      }
+      setSign("a", mode);
+      setSign("b", mode);
+      setSign("c", mode);
+    }
+
+    // init
+    Plotly.newPlot(plotDiv, [{
+      x: x,
+      y: yVals(1, 0, 0),
+      mode: "lines",
+      name: "y = ax² + bx + c",
+      line: { width: 3 }
+    }], layout, { displayModeBar: false, responsive: true });
+
+    ["a","b","c"].forEach(id => {
+      document.getElementById(id).addEventListener("input", update);
+    });
+
+    update();
+
+    // expose functions for inline onclick
+    window.setExact = setExact;
+    window.setSign = setSign;
+    window.setAll = setAll;
+    window.setZeroA = setZeroA;
+  </script>
+</body>
+</html>
